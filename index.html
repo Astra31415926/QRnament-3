@@ -2,9 +2,9 @@
 <html lang="ua">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QRnament №3</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
@@ -15,14 +15,14 @@
     <div id="flash-layer" class="flash-overlay"></div>
 
     <div style="position: fixed; bottom: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 50;">
-        <input type="text" id="main-input" placeholder="Enter text..." style="padding: 10px; width: 80%; background: rgba(0,0,0,0.5); border: 1px solid #00ff41; color: white;">
-        <div id="status" style="color: #00ff41; font-family: monospace;">Ready</div>
-        <div style="display: flex; gap: 10px;">
-            <button onclick="App.startCamera()">Scan</button>
-            <button onclick="App.save()">Save</button>
+        <input type="text" id="main-input" placeholder="Напишіть щось..." style="padding: 12px; width: 85%; background: rgba(0,0,0,0.7); border: 2px solid #00ff41; color: white; border-radius: 8px; font-size: 16px;">
+        <div id="status" style="color: #00ff41; font-family: monospace; text-shadow: 0 0 5px #000;">Ready</div>
+        <div style="display: flex; gap: 15px;">
+            <button onclick="App.startCamera()" style="padding: 10px 25px; background: #00ff41; color: black; border: none; border-radius: 5px; font-weight: bold;">SCAN</button>
+            <button onclick="App.save()" style="padding: 10px 25px; background: #fff; color: black; border: none; border-radius: 5px; font-weight: bold;">SAVE</button>
         </div>
     </div>
 
-    <script src="js/core.js"></script>
+    <script src="core.js"></script>
 </body>
 </html>
