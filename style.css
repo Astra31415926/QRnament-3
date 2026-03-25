@@ -2,76 +2,77 @@ body {
     background: #000; 
     color: #fff; 
     font-family: 'Inter', sans-serif; 
-    overflow-x: hidden; 
+    margin: 0; 
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
 }
 
-/* Logo Colors */
-.c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
-.k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
-
-/* Canvas & Video Constraints */
-/* Object-fit: contain гарантирует, что картинка не растянется */
+/* Контейнер для холста, чтобы он не вылезал за экран */
 #canvas {
-    width: 100%; 
-    height: 100%; 
-    object-fit: contain; 
+    max-width: 90vw;
+    max-height: 70vh;
+    object-fit: contain;
+    border: 1px solid #333;
+    box-shadow: 0 0 30px rgba(0,255,65,0.2);
     image-rendering: pixelated;
 }
 
-/* Video: object-fit cover заполняет экран, но не сплющивает */
 #video {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Fill the area, crop edges */
-    background: #000;
-    transform: scaleX(-1); /* Mirror selfie cam usually */
+    object-fit: cover;
     display: none;
+    z-index: 10;
 }
 
-/* Scan FX */
+.controls {
+    position: fixed;
+    bottom: 20px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 90%;
+}
+
+input {
+    width: 100%;
+    max-width: 400px;
+    padding: 12px;
+    background: rgba(20,20,20,0.8);
+    border: 1px solid #00ff41;
+    color: #fff;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    cursor: pointer;
+    background: #111;
+    color: #00ff41;
+    border: 1px solid #00ff41;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+button:hover { background: #00ff41; color: #000; }
+
 .scan-line { 
-    position: absolute; 
-    left: 0; right: 0; 
-    height: 4px; 
-    background: #00ff41; 
-    box-shadow: 0 0 20px #00ff41; 
-    top: 0; 
-    z-index: 20; 
-    pointer-events: none;
-    display: none;
+    position: absolute; left: 0; right: 0; height: 2px; 
+    background: #00ff41; box-shadow: 0 0 10px #00ff41;
+    display: none; z-index: 20;
 }
-
-/* Flash Effect */
-.flash-overlay {
-    position: absolute; 
-    inset: 0; 
-    background: white; 
-    opacity: 0; 
-    pointer-events: none; 
-    z-index: 30;
-    transition: opacity 0.1s;
-}
-
-/* Menu Overlay */
-.menu-overlay {
-    position: fixed; 
-    inset: 0; 
-    background: rgba(0,0,0,0.98);
-    z-index: 100; 
-    transform: translateX(100%);
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    display: flex; 
-    flex-direction: column; 
-    padding: 2rem;
-    overflow-y: auto;
-}
-.menu-overlay.open { transform: translateX(0); }
-
-.btn-active:active { transform: scale(0.96); }
-
-/* Custom Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #111; }
-::-webkit-scrollbar-thumb { background: #333; }
