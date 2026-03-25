@@ -3,61 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament v3.1 // Final Fix</title>
+    <title>QRnament v3.1 // Pro Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
         :root { --neon: #00ff41; }
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; overflow-x: hidden; }
-        .neon-border { border: 1px solid var(--neon); box-shadow: 0 0 10px rgba(0,255,65,0.3); }
-        .scan-line { position: absolute; left: 0; right: 0; height: 3px; background: var(--neon); box-shadow: 0 0 15px var(--neon); z-index: 50; display: none; top: 0; }
-        #canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-        #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; transform: scaleX(-1); }
-        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: none; padding: 20px; }
-        .menu-overlay.open { display: flex; flex-direction: column; }
-        .flash-overlay { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 60; }
+        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; }
+        .neon-border { border: 1px solid var(--neon); box-shadow: 0 0 15px rgba(0,255,65,0.4); }
+        .scan-line { position: absolute; left: 0; right: 0; height: 3px; background: var(--neon); box-shadow: 0 0 20px var(--neon); z-index: 50; display: none; top: 0; pointer-events: none; }
+        #canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; border-radius: 1rem; }
+        #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; transform: scaleX(-1); border-radius: 1rem; }
+        .flash-overlay { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 60; }
+        .btn-active:active { transform: scale(0.95); }
     </style>
 </head>
 <body class="flex flex-col min-h-screen p-4 max-w-md mx-auto bg-black">
 
-    <div id="menu-overlay" class="menu-overlay">
-        <button onclick="App.toggleMenu()" class="text-4xl self-end text-zinc-500">&times;</button>
-        <h2 class="text-2xl font-black mb-4">QRnament v3.1</h2>
-        <p class="text-zinc-400">Симметрия: 8-кратная<br>Спрайты: 5x5 модулей</p>
-    </div>
-
-    <header class="flex justify-between items-center mb-4">
-        <h1 class="text-xl font-black italic tracking-tighter">QR<span class="text-[#00ff41]">NAMENT</span></h1>
-        <button onclick="App.toggleMenu()" class="p-2 border border-white/10 rounded-lg">MENU</button>
+    <header class="flex justify-between items-center mb-6 pt-2">
+        <h1 class="text-2xl font-black italic tracking-tighter text-white">QR<span class="text-[#00ff41]">NAMENT</span> <span class="text-[10px] not-italic opacity-50 font-normal">v3.1</span></h1>
+        <div class="w-8 h-8 rounded border border-white/20 flex items-center justify-center text-[10px]">UA</div>
     </header>
 
     <div class="mb-4 flex gap-2">
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-xl border-l-4 border-[#00ff41] outline-none text-white h-16" placeholder="Введіть текст..."></textarea>
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900/80 rounded-2xl border-l-4 border-[#00ff41] outline-none text-white h-20 text-sm shadow-inner" placeholder="Напишіть щось магічне..."></textarea>
     </div>
 
-    <div class="relative aspect-square w-full bg-zinc-950 rounded-2xl border border-white/5 overflow-hidden mb-4 shadow-[0_0_50px_rgba(0,0,0,1)]">
+    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 overflow-hidden mb-6 shadow-2xl">
         <canvas id="canvas" width="1024" height="1024"></canvas>
         <video id="video" playsinline></video>
         <div id="scan-line" class="scan-line"></div>
         <div id="flash-layer" class="flash-overlay"></div>
     </div>
 
-    <div class="flex flex-col gap-3">
-        <button onclick="App.save()" class="w-full py-4 bg-white text-black font-black rounded-xl uppercase text-xs tracking-widest">Save PNG</button>
+    <div class="flex flex-col gap-3 pb-8">
+        <button onclick="App.save()" class="w-full py-4 bg-white text-black font-black rounded-2xl uppercase text-xs tracking-[0.2em] btn-active shadow-lg">Save Ornament</button>
         <div class="grid grid-cols-2 gap-3">
-            <button onclick="App.startCamera()" class="py-4 bg-black text-[#00ff41] font-bold rounded-xl border border-[#00ff41] text-xs uppercase">Scan Cam</button>
-            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-black text-[#00ff41] font-bold rounded-xl border border-[#00ff41] text-xs uppercase">Scan File</button>
+            <button onclick="App.startCamera()" class="py-4 bg-zinc-900 text-[#00ff41] font-bold rounded-2xl border border-[#00ff41]/30 text-xs uppercase tracking-widest btn-active">Cam Scan</button>
+            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-zinc-900 text-[#00ff41] font-bold rounded-2xl border border-[#00ff41]/30 text-xs uppercase tracking-widest btn-active">File Scan</button>
         </div>
         <input type="file" id="file-input" class="hidden" accept="image/*">
     </div>
 
-    <p id="status" class="text-center text-[10px] text-[#00ff41] font-bold mt-4 tracking-widest uppercase">Ready</p>
+    <p id="status" class="text-center text-[9px] text-[#00ff41] font-black tracking-[0.3em] uppercase opacity-70">Ready / System Online</p>
 
     <script>
-        // Тут вся магия (библиотека спрайтов и логика)
-        const SPRITE_LIB = [[0,0,1,0,0, 0,1,1,1,0, 1,1,1,1,1, 0,1,1,1,0, 0,0,1,0,0], [1,1,1,1,1, 1,0,0,0,1, 1,0,0,0,1, 1,0,0,0,1, 1,1,1,1,1], [0,0,1,0,0, 0,0,1,0,0, 1,1,1,1,1, 0,0,1,0,0, 0,0,1,0,0], [1,0,0,0,1, 0,1,0,1,0, 0,0,1,0,0, 0,1,0,1,0, 1,0,0,0,1]];
-        
+        const SPRITE_LIB = [
+            [0,0,1,0,0, 0,1,1,1,0, 1,1,1,1,1, 0,1,1,1,0, 0,0,1,0,0], [1,1,1,1,1, 1,0,0,0,1, 1,0,0,0,1, 1,0,0,0,1, 1,1,1,1,1],
+            [0,0,1,0,0, 0,0,1,0,0, 1,1,1,1,1, 0,0,1,0,0, 0,0,1,0,0], [1,0,0,0,1, 0,1,0,1,0, 0,0,1,0,0, 0,1,0,1,0, 1,0,0,0,1],
+            [1,1,1,1,1, 0,0,0,0,1, 1,1,1,0,1, 1,0,0,0,1, 1,1,1,1,1], [1,1,1,1,1, 1,0,1,0,1, 1,0,1,0,1, 1,0,1,0,1, 1,1,1,1,1],
+            [1,1,1,1,1, 1,0,0,0,0, 1,1,1,1,1, 0,0,0,0,1, 1,1,1,1,1], [1,1,0,1,1, 1,1,0,1,1, 0,0,0,0,0, 1,1,0,1,1, 1,1,0,1,1],
+            [1,1,1,1,1, 1,0,0,0,0, 1,0,1,1,1, 1,0,1,0,1, 1,0,1,1,1], [0,0,1,0,0, 0,1,1,1,0, 1,1,1,1,1, 0,0,0,0,0, 0,0,0,0,0],
+            [1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1], [1,1,1,1,1, 0,0,0,0,0, 1,1,1,1,1, 0,0,0,0,0, 1,1,1,1,1],
+            [0,1,1,1,0, 1,0,0,0,1, 1,0,1,0,1, 1,0,0,0,1, 0,1,1,1,0], [1,1,0,1,1, 1,1,0,1,1, 0,0,1,0,0, 1,1,0,1,1, 1,1,0,1,1],
+            [1,1,1,1,1, 1,0,0,0,1, 1,0,1,0,1, 1,0,0,0,1, 1,1,1,1,1], [0,0,1,0,0, 0,1,0,1,0, 1,0,0,0,1, 0,1,0,1,0, 0,0,1,0,0],
+            [1,1,1,0,0, 1,1,1,0,0, 1,1,1,0,0, 0,0,0,0,0, 0,0,0,0,0], [0,0,0,0,1, 0,0,0,1,0, 0,0,1,0,0, 0,1,0,0,0, 1,0,0,0,0],
+            [1,0,0,0,0, 1,0,0,0,0, 1,0,0,0,0, 1,0,0,0,0, 1,1,1,1,1], [1,1,1,1,1, 0,0,1,0,0, 0,0,1,0,0, 0,0,1,0,0, 0,0,1,0,0]
+        ];
+
         const App = {
             init() {
                 this.els = {
@@ -66,8 +69,6 @@
                     input: document.getElementById('main-input'),
                     status: document.getElementById('status'),
                     scanLine: document.getElementById('scan-line'),
-                    flash: document.getElementById('flash-layer'),
-                    menu: document.getElementById('menu-overlay'),
                     fileInput: document.getElementById('file-input'),
                     ctx: document.getElementById('canvas').getContext('2d')
                 };
@@ -76,24 +77,19 @@
                 this.generate();
             },
             generate() {
-                const text = this.els.input.value || "QRnament";
+                const text = this.els.input.value || "QRnament 3.1";
                 const qr = qrcode(0, 'M');
-                qr.addData(text); qr.make();
+                qr.addData(unescape(encodeURIComponent(text))); qr.make();
                 const mCount = qr.getModuleCount();
                 const size = mCount + 4;
                 const mSize = 1024 / size;
-                
                 let seed = 0; for(let i=0; i<text.length; i++) seed += text.charCodeAt(i);
                 
                 this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024);
                 this.els.ctx.globalCompositeOperation = "screen";
-                
-                // Red Channel
                 this.renderLayer("#FF0000", size, mSize, seed);
-                // Green Channel
                 this.renderLayer("#00FF00", size, mSize, Math.floor(seed * 1.618));
                 
-                // Blue QR
                 this.els.ctx.fillStyle = "#0000FF";
                 for(let r=0; r<mCount; r++) {
                     for(let c=0; c<mCount; c++) {
@@ -110,21 +106,39 @@
                     for(let x=0; x<=y; x++) {
                         const hash = (Math.floor((x+2)/5) * 1337 + Math.floor((y+2)/5) * 7919) ^ seed;
                         const sprite = SPRITE_LIB[Math.abs(hash) % SPRITE_LIB.length];
-                        if(sprite[( (y+2)%5 )*5 + ( (x+2)%5 )]) {
-                            const pts = [[x,y],[y,x],[-x,y],[-y,x],[x,-y],[y,-x],[-x,-y],[-y,-x]];
-                            pts.forEach(([px,py]) => ctx.fillRect((center+px)*mSize, (center+py)*mSize, mSize, mSize));
+                        if(sprite[((y+2)%5)*5 + ((x+2)%5)]) {
+                            [[x,y],[y,x],[-x,y],[-y,x],[x,-y],[y,-x],[-x,-y],[-y,-x]].forEach(([px,py]) => {
+                                ctx.fillRect((center+px)*mSize, (center+py)*mSize, mSize, mSize);
+                            });
                         }
                     }
                 }
+            },
+            handleFile(e) {
+                const file = e.target.files[0];
+                if(!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.els.ctx.drawImage(img, 0, 0, 1024, 1024);
+                        const data = this.els.ctx.getImageData(0,0,1024,1024);
+                        const code = jsQR(data.data, 1024, 1024);
+                        if(code) { this.els.input.value = code.data; this.generate(); }
+                        else { alert("QR не знайдено!"); }
+                    };
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
             },
             startCamera() {
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => {
                     this.els.video.srcObject = s; this.els.video.style.display = 'block'; this.els.video.play();
                     this.els.scanLine.style.display = 'block';
+                    this.els.status.innerText = "Scanning...";
                 });
             },
-            toggleMenu() { this.els.menu.classList.toggle('open'); },
-            save() { const a = document.createElement('a'); a.download = 'qr.png'; a.href = this.els.canvas.toDataURL(); a.click(); }
+            save() { const a = document.createElement('a'); a.download = 'qrnament.png'; a.href = this.els.canvas.toDataURL(); a.click(); }
         };
         document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
