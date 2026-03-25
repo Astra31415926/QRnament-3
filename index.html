@@ -1,30 +1,132 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QRnament v3</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QRnament v3.1 // Final Fix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <style>
+        :root { --neon: #00ff41; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; overflow-x: hidden; }
+        .neon-border { border: 1px solid var(--neon); box-shadow: 0 0 10px rgba(0,255,65,0.3); }
+        .scan-line { position: absolute; left: 0; right: 0; height: 3px; background: var(--neon); box-shadow: 0 0 15px var(--neon); z-index: 50; display: none; top: 0; }
+        #canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+        #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; transform: scaleX(-1); }
+        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: none; padding: 20px; }
+        .menu-overlay.open { display: flex; flex-direction: column; }
+        .flash-overlay { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 60; }
+    </style>
 </head>
-<body>
-    <video id="video" playsinline></video>
-    <canvas id="canvas" width="1024" height="1024"></canvas>
-    <div id="scan-line" class="scan-line"></div>
-    <div id="flash-layer" class="flash-overlay"></div>
+<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto bg-black">
 
-    <div class="controls">
-        <input type="text" id="main-input" placeholder="TYPE OR SCAN...">
-        <div id="status">READY</div>
-        <div class="btn-group">
-            <button onclick="App.startCamera()">SCAN</button>
-            <button onclick="document.getElementById('file-input').click()">FILE</button>
-            <button onclick="App.save()">SAVE</button>
-        </div>
-        <input type="file" id="file-input" style="display:none" accept="image/*">
+    <div id="menu-overlay" class="menu-overlay">
+        <button onclick="App.toggleMenu()" class="text-4xl self-end text-zinc-500">&times;</button>
+        <h2 class="text-2xl font-black mb-4">QRnament v3.1</h2>
+        <p class="text-zinc-400">Симметрия: 8-кратная<br>Спрайты: 5x5 модулей</p>
     </div>
 
-    <script src="core.js"></script>
+    <header class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-black italic tracking-tighter">QR<span class="text-[#00ff41]">NAMENT</span></h1>
+        <button onclick="App.toggleMenu()" class="p-2 border border-white/10 rounded-lg">MENU</button>
+    </header>
+
+    <div class="mb-4 flex gap-2">
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-xl border-l-4 border-[#00ff41] outline-none text-white h-16" placeholder="Введіть текст..."></textarea>
+    </div>
+
+    <div class="relative aspect-square w-full bg-zinc-950 rounded-2xl border border-white/5 overflow-hidden mb-4 shadow-[0_0_50px_rgba(0,0,0,1)]">
+        <canvas id="canvas" width="1024" height="1024"></canvas>
+        <video id="video" playsinline></video>
+        <div id="scan-line" class="scan-line"></div>
+        <div id="flash-layer" class="flash-overlay"></div>
+    </div>
+
+    <div class="flex flex-col gap-3">
+        <button onclick="App.save()" class="w-full py-4 bg-white text-black font-black rounded-xl uppercase text-xs tracking-widest">Save PNG</button>
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="App.startCamera()" class="py-4 bg-black text-[#00ff41] font-bold rounded-xl border border-[#00ff41] text-xs uppercase">Scan Cam</button>
+            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-black text-[#00ff41] font-bold rounded-xl border border-[#00ff41] text-xs uppercase">Scan File</button>
+        </div>
+        <input type="file" id="file-input" class="hidden" accept="image/*">
+    </div>
+
+    <p id="status" class="text-center text-[10px] text-[#00ff41] font-bold mt-4 tracking-widest uppercase">Ready</p>
+
+    <script>
+        // Тут вся магия (библиотека спрайтов и логика)
+        const SPRITE_LIB = [[0,0,1,0,0, 0,1,1,1,0, 1,1,1,1,1, 0,1,1,1,0, 0,0,1,0,0], [1,1,1,1,1, 1,0,0,0,1, 1,0,0,0,1, 1,0,0,0,1, 1,1,1,1,1], [0,0,1,0,0, 0,0,1,0,0, 1,1,1,1,1, 0,0,1,0,0, 0,0,1,0,0], [1,0,0,0,1, 0,1,0,1,0, 0,0,1,0,0, 0,1,0,1,0, 1,0,0,0,1]];
+        
+        const App = {
+            init() {
+                this.els = {
+                    canvas: document.getElementById('canvas'),
+                    video: document.getElementById('video'),
+                    input: document.getElementById('main-input'),
+                    status: document.getElementById('status'),
+                    scanLine: document.getElementById('scan-line'),
+                    flash: document.getElementById('flash-layer'),
+                    menu: document.getElementById('menu-overlay'),
+                    fileInput: document.getElementById('file-input'),
+                    ctx: document.getElementById('canvas').getContext('2d')
+                };
+                this.els.input.addEventListener('input', () => this.generate());
+                this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
+                this.generate();
+            },
+            generate() {
+                const text = this.els.input.value || "QRnament";
+                const qr = qrcode(0, 'M');
+                qr.addData(text); qr.make();
+                const mCount = qr.getModuleCount();
+                const size = mCount + 4;
+                const mSize = 1024 / size;
+                
+                let seed = 0; for(let i=0; i<text.length; i++) seed += text.charCodeAt(i);
+                
+                this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024);
+                this.els.ctx.globalCompositeOperation = "screen";
+                
+                // Red Channel
+                this.renderLayer("#FF0000", size, mSize, seed);
+                // Green Channel
+                this.renderLayer("#00FF00", size, mSize, Math.floor(seed * 1.618));
+                
+                // Blue QR
+                this.els.ctx.fillStyle = "#0000FF";
+                for(let r=0; r<mCount; r++) {
+                    for(let c=0; c<mCount; c++) {
+                        if(qr.isDark(r,c)) this.els.ctx.fillRect((c+2)*mSize, (r+2)*mSize, mSize, mSize);
+                    }
+                }
+                this.els.ctx.globalCompositeOperation = "source-over";
+                this.els.status.innerText = "SEED: " + seed;
+            },
+            renderLayer(color, size, mSize, seed) {
+                const ctx = this.els.ctx; ctx.fillStyle = color;
+                const center = Math.floor(size/2);
+                for(let y=0; y<=center; y++) {
+                    for(let x=0; x<=y; x++) {
+                        const hash = (Math.floor((x+2)/5) * 1337 + Math.floor((y+2)/5) * 7919) ^ seed;
+                        const sprite = SPRITE_LIB[Math.abs(hash) % SPRITE_LIB.length];
+                        if(sprite[( (y+2)%5 )*5 + ( (x+2)%5 )]) {
+                            const pts = [[x,y],[y,x],[-x,y],[-y,x],[x,-y],[y,-x],[-x,-y],[-y,-x]];
+                            pts.forEach(([px,py]) => ctx.fillRect((center+px)*mSize, (center+py)*mSize, mSize, mSize));
+                        }
+                    }
+                }
+            },
+            startCamera() {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => {
+                    this.els.video.srcObject = s; this.els.video.style.display = 'block'; this.els.video.play();
+                    this.els.scanLine.style.display = 'block';
+                });
+            },
+            toggleMenu() { this.els.menu.classList.toggle('open'); },
+            save() { const a = document.createElement('a'); a.download = 'qr.png'; a.href = this.els.canvas.toDataURL(); a.click(); }
+        };
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
 </body>
 </html>
