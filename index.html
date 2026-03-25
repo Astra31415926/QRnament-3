@@ -3,65 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QRnament v3.1 // Pro Edition</title>
+    <title>QRnament v3.1 // Surreal Pop</title>
+    
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
     <style>
-        :root { --neon: #00ff41; }
-        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; }
-        .neon-border { border: 1px solid var(--neon); box-shadow: 0 0 15px rgba(0,255,65,0.4); }
-        .scan-line { position: absolute; left: 0; right: 0; height: 3px; background: var(--neon); box-shadow: 0 0 20px var(--neon); z-index: 50; display: none; top: 0; pointer-events: none; }
-        #canvas { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; border-radius: 1rem; }
-        #video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; transform: scaleX(-1); border-radius: 1rem; }
-        .flash-overlay { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 60; }
-        .btn-active:active { transform: scale(0.95); }
+        :root {
+            --neon-green: #00ff41;
+            --neon-red: #ff004d;
+            --neon-blue: #0088ff;
+            --glass-bg: rgba(0, 255, 65, 0.05);
+        }
+
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: 'Inter', system-ui, sans-serif; 
+            overflow-x: hidden; 
+        }
+
+        /* Logo Colors */
+        .c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
+        .k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
+
+        /* Canvas & Video */
+        #canvas {
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            image-rendering: pixelated;
+        }
+
+        #video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* No Stretch */
+            background: #000;
+            transform: scaleX(-1);
+            display: none;
+        }
+
+        /* Scan FX with Pulse Animation */
+        .scan-line { 
+            position: absolute; 
+            left: 0; right: 0; 
+            height: 4px; 
+            background: var(--neon-green); 
+            box-shadow: 0 0 20px var(--neon-green), 0 0 40px var(--neon-green); 
+            top: 0; 
+            z-index: 20; 
+            pointer-events: none;
+            display: none;
+        }
+
+        /* Pulse Keyframes */
+        @keyframes pulse {
+            0% { opacity: 0.6; box-shadow: 0 0 20px var(--neon-green); height: 2px; }
+            50% { opacity: 1; box-shadow: 0 0 40px var(--neon-green), 0 0 10px #fff; height: 6px; }
+            100% { opacity: 0.6; box-shadow: 0 0 20px var(--neon-green); height: 2px; }
+        }
+
+        /* Flash Effect */
+        .flash-overlay {
+            position: absolute; 
+            inset: 0; 
+            background: white; 
+            opacity: 0; 
+            pointer-events: none; 
+            z-index: 30;
+            transition: opacity 0.1s;
+        }
+
+        /* Menu Overlay */
+        .menu-overlay {
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.98);
+            z-index: 100; 
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; 
+            flex-direction: column; 
+            padding: 2rem;
+            overflow-y: auto;
+        }
+        .menu-overlay.open { transform: translateX(0); }
+
+        /* BUTTONS & UI - SURREAL POP ART */
+
+        .btn-active:active { transform: scale(0.96); }
+
+        /* Glass Panel Background for Buttons */
+        .neon-btn-green {
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 255, 65, 0.05);
+            text-shadow: 0 0 5px var(--neon-green);
+            transition: all 0.2s;
+        }
+
+        .neon-btn-green:hover {
+            box-shadow: 0 0 20px var(--neon-green), inset 0 0 30px rgba(0, 255, 65, 0.1);
+        }
+
+        /* Text Input Glow */
+        .neon-text-glow {
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+            transition: all 0.3s;
+        }
+
+        .neon-text-glow:focus {
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
+            border-color: #fff;
+        }
+
+        /* Border Box for Menu Language */
+        .neon-border-box {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: var(--neon-green); }
     </style>
 </head>
-<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto bg-black">
+<body class="flex flex-col min-h-screen p-4 max-w-md mx-auto">
 
-    <header class="flex justify-between items-center mb-6 pt-2">
-        <h1 class="text-2xl font-black italic tracking-tighter text-white">QR<span class="text-[#00ff41]">NAMENT</span> <span class="text-[10px] not-italic opacity-50 font-normal">v3.1</span></h1>
-        <div class="w-8 h-8 rounded border border-white/20 flex items-center justify-center text-[10px]">UA</div>
-    </header>
+    <!-- Menu Overlay -->
+    <div id="menu-overlay" class="menu-overlay">
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex gap-2 bg-zinc-800 p-1 rounded-lg neon-border-box">
+                <button onclick="App.setLang('ua')" id="btn-lang-ua" class="text-xs font-bold px-3 py-1 rounded transition-colors">UA</button>
+                <button onclick="App.setLang('en')" id="btn-lang-en" class="text-xs font-bold px-3 py-1 rounded transition-colors text-zinc-500">EN</button>
+            </div>
+            <button onclick="App.toggleMenu()" class="text-3xl text-zinc-500 hover:text-neonGreen">&times;</button>
+        </div>
+        
+        <div class="space-y-6 text-sm">
+            <div>
+                <h2 class="text-xl font-black mb-2 flex items-center gap-2">
+                    <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
+                </h2>
+                <p class="text-neonGreen opacity-70">v3.1 // Surreal Pop</p>
+            </div>
 
-    <div class="mb-4 flex gap-2">
-        <textarea id="main-input" class="w-full p-4 bg-zinc-900/80 rounded-2xl border-l-4 border-[#00ff41] outline-none text-white h-20 text-sm shadow-inner" placeholder="Напишіть щось магічне..."></textarea>
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="menu_tech">Технологія</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_tech_text">Кольорові 2D-коди розширюють класичний QR-код (Denso Wave, 1994). Динамічне плетиво вузорів залежить від тексту.</p>
+            </div>
+            
+            <div class="border-t border-zinc-800 pt-4">
+                <h3 class="font-bold mb-2 text-zinc-300" data-i18n="menu_author">Автор</h3>
+                <p class="text-zinc-500 leading-relaxed" data-i18n="menu_author_text">Михайло Кашкаров — сайнс-арт художник, авторська техніка світлочутливого живопису та спектрального дизайну.</p>
+            </div>
+        </div>
     </div>
 
-    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 overflow-hidden mb-6 shadow-2xl">
+    <header class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-black tracking-tighter uppercase">
+            <span class="text-white">QR</span><span class="c">n</span><span class="m">a</span><span class="y">m</span><span class="k">e</span><span class="a">n</span><span class="n">t</span>
+        </h1>
+        <button onclick="App.toggleMenu()" class="text-white text-xl p-2 border border-white/10 rounded-lg hover:bg-white/10 transition-colors neon-border-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+    </header>
+
+    <!-- Controls -->
+    <div class="mb-4 relative flex gap-2">
+        <textarea id="main-input" class="w-full p-4 bg-zinc-900 rounded-2xl border-l-4 border-neonGreen outline-none h-16 text-sm text-white placeholder-zinc-600 neon-text-glow" placeholder="Type to generate..."></textarea>
+        <button onclick="App.generate()" class="bg-black text-white font-black px-4 rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Gen</button>
+    </div>
+
+    <!-- Display Container -->
+    <div class="relative aspect-square w-full bg-zinc-950 rounded-3xl border border-white/5 shadow-2xl overflow-hidden mb-4">
         <canvas id="canvas" width="1024" height="1024"></canvas>
         <video id="video" playsinline></video>
         <div id="scan-line" class="scan-line"></div>
         <div id="flash-layer" class="flash-overlay"></div>
     </div>
 
-    <div class="flex flex-col gap-3 pb-8">
-        <button onclick="App.save()" class="w-full py-4 bg-white text-black font-black rounded-2xl uppercase text-xs tracking-[0.2em] btn-active shadow-lg">Save Ornament</button>
+    <!-- Actions -->
+    <div class="flex flex-col gap-3">
+        <button onclick="App.save()" class="w-full py-4 bg-black text-white font-black rounded-2xl text-xs uppercase tracking-widest btn-active neon-btn-green">Save PNG</button>
+        
         <div class="grid grid-cols-2 gap-3">
-            <button onclick="App.startCamera()" class="py-4 bg-zinc-900 text-[#00ff41] font-bold rounded-2xl border border-[#00ff41]/30 text-xs uppercase tracking-widest btn-active">Cam Scan</button>
-            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-zinc-900 text-[#00ff41] font-bold rounded-2xl border border-[#00ff41]/30 text-xs uppercase tracking-widest btn-active">File Scan</button>
+            <button onclick="App.startCamera()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">Cam Scan</button>
+            <button onclick="document.getElementById('file-input').click()" class="py-4 bg-black text-white font-bold rounded-2xl border border-neonGreen text-xs uppercase tracking-widest btn-active neon-btn-green">File Scan</button>
         </div>
-        <input type="file" id="file-input" class="hidden" accept="image/*">
+        <input type="file" id="file-input" accept="image/*" class="hidden">
     </div>
 
-    <p id="status" class="text-center text-[9px] text-[#00ff41] font-black tracking-[0.3em] uppercase opacity-70">Ready / System Online</p>
+    <p id="status" class="text-center text-[10px] text-neonGreen uppercase font-bold tracking-widest mt-4">Ready</p>
 
     <script>
+        // --- 1. SPRITE LIBRARY & CONFIG ---
         const SPRITE_LIB = [
-            [0,0,1,0,0, 0,1,1,1,0, 1,1,1,1,1, 0,1,1,1,0, 0,0,1,0,0], [1,1,1,1,1, 1,0,0,0,1, 1,0,0,0,1, 1,0,0,0,1, 1,1,1,1,1],
-            [0,0,1,0,0, 0,0,1,0,0, 1,1,1,1,1, 0,0,1,0,0, 0,0,1,0,0], [1,0,0,0,1, 0,1,0,1,0, 0,0,1,0,0, 0,1,0,1,0, 1,0,0,0,1],
-            [1,1,1,1,1, 0,0,0,0,1, 1,1,1,0,1, 1,0,0,0,1, 1,1,1,1,1], [1,1,1,1,1, 1,0,1,0,1, 1,0,1,0,1, 1,0,1,0,1, 1,1,1,1,1],
-            [1,1,1,1,1, 1,0,0,0,0, 1,1,1,1,1, 0,0,0,0,1, 1,1,1,1,1], [1,1,0,1,1, 1,1,0,1,1, 0,0,0,0,0, 1,1,0,1,1, 1,1,0,1,1],
-            [1,1,1,1,1, 1,0,0,0,0, 1,0,1,1,1, 1,0,1,0,1, 1,0,1,1,1], [0,0,1,0,0, 0,1,1,1,0, 1,1,1,1,1, 0,0,0,0,0, 0,0,0,0,0],
-            [1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1], [1,1,1,1,1, 0,0,0,0,0, 1,1,1,1,1, 0,0,0,0,0, 1,1,1,1,1],
-            [0,1,1,1,0, 1,0,0,0,1, 1,0,1,0,1, 1,0,0,0,1, 0,1,1,1,0], [1,1,0,1,1, 1,1,0,1,1, 0,0,1,0,0, 1,1,0,1,1, 1,1,0,1,1],
-            [1,1,1,1,1, 1,0,0,0,1, 1,0,1,0,1, 1,0,0,0,1, 1,1,1,1,1], [0,0,1,0,0, 0,1,0,1,0, 1,0,0,0,1, 0,1,0,1,0, 0,0,1,0,0],
-            [1,1,1,0,0, 1,1,1,0,0, 1,1,1,0,0, 0,0,0,0,0, 0,0,0,0,0], [0,0,0,0,1, 0,0,0,1,0, 0,0,1,0,0, 0,1,0,0,0, 1,0,0,0,0],
-            [1,0,0,0,0, 1,0,0,0,0, 1,0,0,0,0, 1,0,0,0,0, 1,1,1,1,1], [1,1,1,1,1, 0,0,1,0,0, 0,0,1,0,0, 0,0,1,0,0, 0,0,1,0,0]
+          [0,0,1,0,0, 0,1,1,1,0, 1,1,1,1,1, 0,1,1,1,0, 0,0,1,0,0], [1,1,1,1,1, 1,0,0,0,1, 1,0,0,0,1, 1,0,0,0,1, 1,1,1,1,1],
+          [0,0,1,0,0, 0,0,1,0,0, 1,1,1,1,1, 0,0,1,0,0, 0,0,1,0,0], [1,0,0,0,1, 0,1,0,1,0, 0,0,1,0,0, 0,1,0,1,0, 1,0,0,0,1],
+          [1,1,1,1,1, 0,0,0,0,1, 1,1,1,0,1, 1,0,0,0,1, 1,1,1,1,1], [1,1,1,1,1, 1,0,1,0,1, 1,0,1,0,1, 1,0,1,0,1, 1,1,1,1,1],
+          [1,1,1,1,1, 1,0,0,0,0, 1,1,1,1,1, 0,0,0,0,1, 1,1,1,1,1], [1,1,0,1,1, 1,1,0,1,1, 0,0,0,0,0, 1,1,0,1,1, 1,1,0,1,1],
+          [1,1,1,1,1, 1,0,0,0,0, 1,0,1,1,1, 1,0,1,0,1, 1,0,1,1,1], [0,0,1,0,0, 0,1,1,1,0, 1,1,1,1,1, 0,0,0,0,0, 0,0,0,0,0],
+          [1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1, 0,1,0,1,0, 1,0,1,0,1], [1,1,1,1,1, 0,0,0,0,0, 1,1,1,1,1, 0,0,0,0,0, 1,1,1,1,1],
+          [0,1,1,1,0, 1,0,0,0,1, 1,0,1,0,1, 1,0,0,0,1, 0,1,1,1,0], [1,1,0,1,1, 1,1,0,1,1, 0,0,1,0,0, 1,1,0,1,1, 1,1,0,1,1],
+          [1,1,1,1,1, 1,0,0,0,1, 1,0,1,0,1, 1,0,0,0,1, 1,1,1,1,1], [0,0,1,0,0, 0,1,0,1,0, 1,0,0,0,1, 0,1,0,1,0, 0,0,1,0,0],
+          [1,1,1,0,0, 1,1,1,0,0, 1,1,1,0,0, 0,0,0,0,0, 0,0,0,0,0], [0,0,0,0,1, 0,0,0,1,0, 0,0,1,0,0, 0,1,0,0,0, 1,0,0,0,0],
+          [1,0,0,0,0, 1,0,0,0,0, 1,0,0,0,0, 1,0,0,0,0, 1,1,1,1,1], [1,1,1,1,1, 0,0,1,0,0, 0,0,1,0,0, 0,0,1,0,0, 0,0,1,0,0]
         ];
 
+        // --- 2. APP MODULE ---
         const App = {
+            state: {
+                lang: 'ua',
+                frozen: false,
+                isScanning: false
+            },
+
+            els: {},
+
             init() {
                 this.els = {
                     canvas: document.getElementById('canvas'),
@@ -69,77 +235,461 @@
                     input: document.getElementById('main-input'),
                     status: document.getElementById('status'),
                     scanLine: document.getElementById('scan-line'),
-                    fileInput: document.getElementById('file-input'),
-                    ctx: document.getElementById('canvas').getContext('2d')
+                    flash: document.getElementById('flash-layer'),
+                    menu: document.getElementById('menu-overlay'),
+                    fileInput: document.getElementById('file-input')
                 };
-                this.els.input.addEventListener('input', () => this.generate());
+                
+                this.els.ctx = this.els.canvas.getContext('2d');
+                
+                // Event Listeners
+                this.els.input.addEventListener('input', () => {
+                    if (this.state.frozen) this.state.frozen = false;
+                    this.generate();
+                });
+                
                 this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
-                this.generate();
+                
+                this.clearCanvas();
+                this.setLang('ua');
             },
+
+            // --- DYNAMIC PATTERN GENERATION ---
+
+            getTextSeed(text) {
+                // Sum of char codes creates a dynamic integer seed
+                let seed = 0;
+                for (let i = 0; i < text.length; i++) {
+                    seed += text.charCodeAt(i);
+                }
+                return seed || 1; // Avoid 0
+            },
+
             generate() {
-                const text = this.els.input.value || "QRnament 3.1";
-                const qr = qrcode(0, 'M');
-                qr.addData(unescape(encodeURIComponent(text))); qr.make();
-                const mCount = qr.getModuleCount();
-                const size = mCount + 4;
-                const mSize = 1024 / size;
-                let seed = 0; for(let i=0; i<text.length; i++) seed += text.charCodeAt(i);
+                const text = this.els.input.value;
+                if (!text) {
+                    this.clearCanvas();
+                    this.updateStatus("Waiting for input...");
+                    return;
+                }
+
+                try {
+                    const utf8Text = unescape(encodeURIComponent(text));
+                    const qr = qrcode(0, 'M');
+                    qr.addData(utf8Text);
+                    qr.make();
+                    
+                    const moduleCount = qr.getModuleCount();
+                    const quietZone = 2;
+                    const totalModules = moduleCount + quietZone * 2;
+                    const modSize = 1024 / totalModules;
+                    
+                    // 1. Calculate Base Seed
+                    const baseSeed = this.getTextSeed(text);
+
+                    // 2. Double Pass Generation (Golden Ratio Split)
+                    // Red uses baseSeed
+                    const gridR = this.buildFabricGrid(totalModules, baseSeed);
+                    
+                    // Green uses baseSeed * 1.618 (Golden Ratio) -> Mathematically different pattern
+                    const gridG = this.buildFabricGrid(totalModules, Math.floor(baseSeed * 1.618));
+                    
+                    // 3. Render
+                    const ctx = this.els.ctx;
+                    
+                    ctx.globalCompositeOperation = "source-over";
+                    ctx.fillStyle = "#000000";
+                    ctx.fillRect(0, 0, 1024, 1024);
+                    
+                    ctx.globalCompositeOperation = "screen";
+
+                    // Draw Red
+                    ctx.fillStyle = "#FF0000";
+                    this.drawGrid(ctx, gridR, totalModules, modSize);
+                    
+                    // Draw Green
+                    ctx.fillStyle = "#00FF00";
+                    this.drawGrid(ctx, gridG, totalModules, modSize);
+
+                    // Draw Blue QR
+                    ctx.fillStyle = "#0000FF";
+                    for (let r = 0; r < moduleCount; r++) {
+                        for (let c = 0; c < moduleCount; c++) {
+                            if (qr.isDark(r, c)) {
+                                ctx.fillRect((c + quietZone) * modSize, (r + quietZone) * modSize, modSize, modSize);
+                            }
+                        }
+                    }
+
+                    ctx.globalCompositeOperation = "source-over";
+                    this.updateStatus("Seed: " + baseSeed);
+
+                } catch (e) {
+                    console.error(e);
+                    this.updateStatus("Error");
+                }
+            },
+
+            buildFabricGrid(size, seed) {
+                const grid = Array(size).fill(0).map(() => Array(size).fill(0));
+                const center = Math.floor(size / 2);
                 
-                this.els.ctx.fillStyle = "#000"; this.els.ctx.fillRect(0,0,1024,1024);
-                this.els.ctx.globalCompositeOperation = "screen";
-                this.renderLayer("#FF0000", size, mSize, seed);
-                this.renderLayer("#00FF00", size, mSize, Math.floor(seed * 1.618));
-                
-                this.els.ctx.fillStyle = "#0000FF";
-                for(let r=0; r<mCount; r++) {
-                    for(let c=0; c<mCount; c++) {
-                        if(qr.isDark(r,c)) this.els.ctx.fillRect((c+2)*mSize, (r+2)*mSize, mSize, mSize);
+                // Iterate Octant
+                for (let y = 0; y <= center; y++) {
+                    for (let x = 0; x <= y; x++) {
+                        
+                        const tx = x + 2;
+                        const ty = y + 2;
+                        
+                        const tileX = Math.floor(tx / 5);
+                        const tileY = Math.floor(ty / 5);
+                        
+                        const localX = tx % 5;
+                        const localY = ty % 5;
+                        
+                        // Use Seed in hash calculation to shuffle sprites
+                        // XOR mixing for better distribution
+                        const hash = (tileX * 1337 + tileY * 7919) ^ seed; 
+                        const spriteIdx = Math.abs(hash) % SPRITE_LIB.length;
+                        
+                        const sprite = SPRITE_LIB[spriteIdx];
+                        const val = sprite[localY * 5 + localX];
+
+                        // 8-Fold Symmetry Mirroring
+                        const points = [
+                            [x, y], [y, x], [-x, y], [-y, x],
+                            [x, -y], [y, -x], [-x, -y], [-y, -x]
+                        ];
+
+                        points.forEach(([px, py]) => {
+                            const gx = center + px;
+                            const gy = center + py;
+                            if (gx >= 0 && gx < size && gy >= 0 && gy < size) {
+                                grid[gy][gx] = val;
+                            }
+                        });
                     }
                 }
-                this.els.ctx.globalCompositeOperation = "source-over";
-                this.els.status.innerText = "SEED: " + seed;
+                return grid;
             },
-            renderLayer(color, size, mSize, seed) {
-                const ctx = this.els.ctx; ctx.fillStyle = color;
-                const center = Math.floor(size/2);
-                for(let y=0; y<=center; y++) {
-                    for(let x=0; x<=y; x++) {
-                        const hash = (Math.floor((x+2)/5) * 1337 + Math.floor((y+2)/5) * 7919) ^ seed;
-                        const sprite = SPRITE_LIB[Math.abs(hash) % SPRITE_LIB.length];
-                        if(sprite[((y+2)%5)*5 + ((x+2)%5)]) {
-                            [[x,y],[y,x],[-x,y],[-y,x],[x,-y],[y,-x],[-x,-y],[-y,-x]].forEach(([px,py]) => {
-                                ctx.fillRect((center+px)*mSize, (center+py)*mSize, mSize, mSize);
-                            });
+
+            drawGrid(ctx, grid, size, cellSize) {
+                for(let r=0; r<size; r++) {
+                    for(let c=0; c<size; c++) {
+                        if(grid[r][c]) {
+                            ctx.fillRect(c*cellSize, r*cellSize, cellSize, cellSize);
                         }
                     }
                 }
             },
+
+            // --- SCANNER & RITUAL LOGIC ---
+
+            startCamera() {
+                if(this.state.isScanning) return;
+                this.state.isScanning = true;
+                this.updateStatus("Accessing Camera...");
+
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(stream => {
+                        this.els.video.srcObject = stream;
+                        this.els.video.style.display = 'block';
+                        this.els.video.play();
+                        this.updateStatus("Scanning...");
+                        
+                        // Start Audio Atmosphere
+                        AudioEngine.startScanAtmosphere();
+                        
+                        this.scanLoop();
+                    })
+                    .catch(err => {
+                        alert("Camera Error: " + err.message);
+                        this.stopCamera();
+                    });
+            },
+
+            stopCamera() {
+                this.state.isScanning = false;
+                AudioEngine.stopAll();
+                if(this.els.video.srcObject) {
+                    this.els.video.srcObject.getTracks().forEach(t => t.stop());
+                }
+                this.els.video.style.display = 'none';
+                this.els.scanLine.style.display = 'none';
+            },
+
+            scanLoop() {
+                if (!this.state.isScanning) return;
+                
+                const video = this.els.video;
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const result = this.processFrame(video, video.videoWidth, video.videoHeight);
+                    
+                    if (result) {
+                        this.captureFrame(video, video.videoWidth, video.videoHeight);
+                        this.stopCamera();
+                        this.performRitual(result);
+                        return;
+                    }
+                }
+                requestAnimationFrame(() => this.scanLoop());
+            },
+
+            processFrame(source, w, h) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1024;
+                canvas.height = 1024;
+                const ctx = canvas.getContext('2d');
+                
+                // CENTER CROP Implementation
+                const aspect = w / h;
+                let sx = 0, sy = 0, sw = w, sh = h;
+                
+                if (aspect > 1) {
+                    sw = h; sx = (w - sw) / 2;
+                } else {
+                    sh = w; sy = (h - sh) / 2;
+                }
+                
+                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
+                
+                const imageData = ctx.getImageData(0, 0, 1024, 1024);
+                const data = imageData.data;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    const b = data[i+2];
+                    data[i] = b; data[i+1] = b; data[i+2] = b;
+                }
+
+                return jsQR(data, 1024, 1024, { inversionAttempts: "attemptBoth" });
+            },
+
+            captureFrame(source, w, h) {
+                const ctx = this.els.ctx;
+                const aspect = w / h;
+                let sx = 0, sy = 0, sw = w, sh = h;
+                if (aspect > 1) { sw = h; sx = (w - sw) / 2; } 
+                else { sh = w; sy = (h - sh) / 2; }
+                
+                ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
+            },
+
+            performRitual(code) {
+                this.state.isScanning = true; 
+                // Audio is already playing from startCamera, but we ensure it's on
+                AudioEngine.startScanAtmosphere();
+
+                // Animation with Pulse
+                const line = this.els.scanLine;
+                line.style.display = 'block';
+                line.style.animation = 'pulse 1.5s infinite'; // Apply CSS pulse animation
+                line.style.top = '0%';
+                line.style.transition = 'none';
+                void line.offsetHeight;
+                line.style.transition = 'top 2.5s linear'; // Slower for effect
+                line.style.top = '100%';
+                this.updateStatus("Analyzing...");
+
+                setTimeout(() => {
+                    this.els.flash.style.opacity = '1';
+                    AudioEngine.playSuccessClick();
+                    
+                    setTimeout(() => {
+                        this.els.flash.style.opacity = '0';
+                        line.style.animation = 'none'; // Stop pulse
+                        
+                        if (code) {
+                            try {
+                                this.els.input.value = decodeURIComponent(escape(code.data));
+                            } catch(e) {
+                                this.els.input.value = code.data;
+                            }
+                            
+                            this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
+                            this.els.ctx.fillRect(0, 0, 1024, 1024);
+                            this.updateStatus("Decoded!");
+                            this.state.frozen = true;
+                        } else {
+                            this.updateStatus("No Data Found");
+                            this.clearCanvas();
+                        }
+                        
+                        this.state.isScanning = false;
+                        line.style.display = 'none';
+                    }, 150);
+                }, 2500);
+            },
+
             handleFile(e) {
                 const file = e.target.files[0];
                 if(!file) return;
+                
                 const reader = new FileReader();
                 reader.onload = (evt) => {
                     const img = new Image();
                     img.onload = () => {
-                        this.els.ctx.drawImage(img, 0, 0, 1024, 1024);
-                        const data = this.els.ctx.getImageData(0,0,1024,1024);
-                        const code = jsQR(data.data, 1024, 1024);
-                        if(code) { this.els.input.value = code.data; this.generate(); }
-                        else { alert("QR не знайдено!"); }
+                        this.captureFrame(img, img.width, img.height);
+                        const result = this.processFrame(img, img.width, img.height);
+                        // Trigger ritual manually for file
+                        this.state.isScanning = true;
+                        AudioEngine.startScanAtmosphere();
+                        this.performRitual(result);
                     };
                     img.src = evt.target.result;
                 };
                 reader.readAsDataURL(file);
+                e.target.value = '';
             },
-            startCamera() {
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => {
-                    this.els.video.srcObject = s; this.els.video.style.display = 'block'; this.els.video.play();
-                    this.els.scanLine.style.display = 'block';
-                    this.els.status.innerText = "Scanning...";
-                });
+
+            // --- UTILS ---
+            
+            clearCanvas() {
+                this.els.ctx.fillStyle = "#000"; 
+                this.els.ctx.fillRect(0,0,1024,1024);
             },
-            save() { const a = document.createElement('a'); a.download = 'qrnament.png'; a.href = this.els.canvas.toDataURL(); a.click(); }
+
+            updateStatus(msg) {
+                this.els.status.innerText = msg;
+            },
+
+            toggleMenu() {
+                this.els.menu.classList.toggle('open');
+            },
+
+            setLang(lang) {
+                this.state.lang = lang;
+                document.getElementById('btn-lang-ua').classList.toggle('bg-white', lang === 'ua');
+                document.getElementById('btn-lang-ua').classList.toggle('text-black', lang === 'ua');
+                document.getElementById('btn-lang-en').classList.toggle('bg-white', lang === 'en');
+                document.getElementById('btn-lang-en').classList.toggle('text-black', lang === 'en');
+            },
+
+            save() {
+                const link = document.createElement('a');
+                link.download = 'qrnament-v3.1.png';
+                link.href = this.els.canvas.toDataURL();
+                link.click();
+            }
         };
+
+        // --- AUDIO ENGINE MODULE (UPDATED) ---
+        const AudioEngine = {
+            ctx: null,
+            scanNodes: [],
+
+            init() {
+                if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+
+            startScanAtmosphere() {
+                this.init();
+                this.stopAll(); // Clear previous
+
+                // 1. Low Drone (40Hz)
+                const drone = this.ctx.createOscillator();
+                drone.type = 'sine';
+                drone.frequency.value = 40;
+                const droneGain = this.ctx.createGain();
+                droneGain.gain.value = 0.15;
+                drone.connect(droneGain);
+                droneGain.connect(this.ctx.destination);
+                drone.start();
+                this.scanNodes.push(drone);
+
+                // 2. Intermittent Signal (880Hz)
+                const beep = this.ctx.createOscillator();
+                beep.type = 'square';
+                beep.frequency.value = 880;
+                const beepGain = this.ctx.createGain();
+                beepGain.gain.value = 0.05;
+                beep.connect(beepGain);
+                beepGain.connect(this.ctx.destination);
+                beep.start();
+                this.scanNodes.push(beep);
+
+                // Intermittent logic (Tremolo simulation via Gain ramping)
+                const toggleBeep = () => {
+                    if(!this.scanNodes.includes(beep)) return;
+                    const now = this.ctx.currentTime;
+                    beepGain.gain.setValueAtTime(beepGain.gain.value, now);
+                    beepGain.gain.linearRampToValueAtTime(beepGain.gain.value > 0.04 ? 0.001 : 0.08, now + 0.1);
+                };
+                
+                this.beepInterval = setInterval(toggleBeep, 250);
+            },
+
+            stopAll() {
+                if(this.beepInterval) clearInterval(this.beepInterval);
+                this.scanNodes.forEach(node => {
+                    try { node.stop(); } catch(e) {}
+                });
+                this.scanNodes = [];
+            },
+
+            playSuccessClick() {
+                this.init();
+                this.stopAll();
+                
+                const now = this.ctx.currentTime;
+
+                // 1. Metallic Click (Noise + Filter)
+                const bufferSize = this.ctx.sampleRate * 0.2;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 2000; // Metallic sound
+
+                const noiseGain = this.ctx.createGain();
+                noiseGain.gain.setValueAtTime(1.0, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+                noise.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(this.ctx.destination);
+                noise.start(now);
+
+                // 2. Reverb/Delay Tail
+                const delay = this.ctx.createDelay(1.0);
+                delay.delayTime.value = 0.1;
+                
+                const feedback = this.ctx.createGain();
+                feedback.gain.value = 0.4;
+
+                const delayGain = this.ctx.createGain();
+                delayGain.gain.value = 0.2;
+
+                // Routing: Noise -> Delay -> Feedback -> Delay...
+                // Actually for a click, we route the noise burst to delay
+                noise.connect(delay);
+                delay.connect(feedback);
+                feedback.connect(delay);
+                delay.connect(delayGain);
+                delayGain.connect(this.ctx.destination);
+
+                // 3. Final Low Thud (Success confirm)
+                const thud = this.ctx.createOscillator();
+                thud.type = 'sine';
+                thud.frequency.setValueAtTime(150, now);
+                thud.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+                const thudGain = this.ctx.createGain();
+                thudGain.gain.setValueAtTime(0.5, now);
+                thudGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                thud.connect(thudGain);
+                thudGain.connect(this.ctx.destination);
+                thud.start(now);
+                thud.stop(now + 0.3);
+            }
+        };
+
+        // Initialize App
         document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
