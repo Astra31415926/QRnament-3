@@ -1,23 +1,29 @@
+:root {
+    --neon-green: #00ff41;
+    --neon-red: #ff004d;
+    --neon-blue: #0088ff;
+    --glass-bg: rgba(0, 255, 65, 0.05);
+}
+
 body { 
     background: #000; 
     color: #fff; 
     font-family: 'Inter', sans-serif; 
-    margin: 0; 
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+    overflow-x: hidden; 
 }
 
-/* Контейнер для холста, чтобы он не вылезал за экран */
+/* Logo Colors */
+.c { color: #00FFFF; } .m { color: #FF00FF; } .y { color: #FFFF00; } 
+.k { color: #FF004D; } .a { color: #00FF41; } .n { color: #0088FF; }
+
+/* Neon Text */
+.text-neonGreen { color: var(--neon-green); }
+
+/* Canvas & Video */
 #canvas {
-    max-width: 90vw;
-    max-height: 70vh;
-    object-fit: contain;
-    border: 1px solid #333;
-    box-shadow: 0 0 30px rgba(0,255,65,0.2);
+    width: 100%; 
+    height: 100%; 
+    object-fit: contain; 
     image-rendering: pixelated;
 }
 
@@ -26,53 +32,94 @@ body {
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: cover; /* No Stretch */
+    background: #000;
+    transform: scaleX(-1);
     display: none;
-    z-index: 10;
 }
 
-.controls {
-    position: fixed;
-    bottom: 20px;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    width: 90%;
-}
-
-input {
-    width: 100%;
-    max-width: 400px;
-    padding: 12px;
-    background: rgba(20,20,20,0.8);
-    border: 1px solid #00ff41;
-    color: #fff;
-    border-radius: 4px;
-    text-align: center;
-}
-
-.btn-group {
-    display: flex;
-    gap: 10px;
-}
-
-button {
-    padding: 10px 20px;
-    cursor: pointer;
-    background: #111;
-    color: #00ff41;
-    border: 1px solid #00ff41;
-    text-transform: uppercase;
-    font-size: 12px;
-    letter-spacing: 1px;
-}
-
-button:hover { background: #00ff41; color: #000; }
-
+/* Scan FX with Pulse Animation */
 .scan-line { 
-    position: absolute; left: 0; right: 0; height: 2px; 
-    background: #00ff41; box-shadow: 0 0 10px #00ff41;
-    display: none; z-index: 20;
+    position: absolute; 
+    left: 0; right: 0; 
+    height: 4px; 
+    background: var(--neon-green); 
+    box-shadow: 0 0 20px var(--neon-green), 0 0 40px var(--neon-green); 
+    top: 0; 
+    z-index: 20; 
+    pointer-events: none;
+    display: none;
 }
+
+/* Pulse Keyframes */
+@keyframes pulse {
+    0% { opacity: 0.6; box-shadow: 0 0 20px var(--neon-green); height: 2px; }
+    50% { opacity: 1; box-shadow: 0 0 40px var(--neon-green), 0 0 10px #fff; height: 6px; }
+    100% { opacity: 0.6; box-shadow: 0 0 20px var(--neon-green); height: 2px; }
+}
+
+/* Flash Effect */
+.flash-overlay {
+    position: absolute; 
+    inset: 0; 
+    background: white; 
+    opacity: 0; 
+    pointer-events: none; 
+    z-index: 30;
+    transition: opacity 0.1s;
+}
+
+/* Menu Overlay */
+.menu-overlay {
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0,0,0,0.98);
+    z-index: 100; 
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; 
+    flex-direction: column; 
+    padding: 2rem;
+    overflow-y: auto;
+}
+.menu-overlay.open { transform: translateX(0); }
+
+/* BUTTONS & UI - SURREAL POP ART */
+
+.btn-active:active { transform: scale(0.96); }
+
+/* Glass Panel Background for Buttons */
+.neon-btn-green {
+    background: var(--glass-bg);
+    border: 1px solid var(--neon-green);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.2), inset 0 0 20px rgba(0, 255, 65, 0.05);
+    text-shadow: 0 0 5px var(--neon-green);
+    transition: all 0.2s;
+}
+
+.neon-btn-green:hover {
+    box-shadow: 0 0 20px var(--neon-green), inset 0 0 30px rgba(0, 255, 65, 0.1);
+}
+
+/* Text Input Glow */
+.neon-text-glow {
+    border: 1px solid var(--neon-green);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+    transition: all 0.3s;
+}
+
+.neon-text-glow:focus {
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), inset 0 0 10px rgba(0, 255, 65, 0.1);
+    border-color: #fff;
+}
+
+/* Border Box for Menu Language */
+.neon-border-box {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: var(--neon-green); }
