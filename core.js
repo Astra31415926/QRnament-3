@@ -17,15 +17,12 @@ const App = {
     state: {
         lang: 'ua',
         frozen: false,
-        isScanning: false,
-        audioCtx: null,
-        noiseSource: null
+        isScanning: false
     },
 
     els: {},
 
     init() {
-        // Cache DOM elements
         this.els = {
             canvas: document.getElementById('canvas'),
             video: document.getElementById('video'),
@@ -47,23 +44,30 @@ const App = {
         
         this.els.fileInput.addEventListener('change', (e) => this.handleFile(e));
         
-        // Initial Draw
         this.clearCanvas();
         this.setLang('ua');
     },
 
-    // --- GENERATION LOGIC ---
+    // --- DYNAMIC PATTERN GENERATION ---
+
+    getTextSeed(text) {
+        // Sum of char codes creates a dynamic integer seed
+        let seed = 0;
+        for (let i = 0; i < text.length; i++) {
+            seed += text.charCodeAt(i);
+        }
+        return seed || 1; // Avoid 0
+    },
 
     generate() {
         const text = this.els.input.value;
         if (!text) {
             this.clearCanvas();
-            this.updateStatus("Input text...");
+            this.updateStatus("Waiting for input...");
             return;
         }
 
         try {
-            // 1. Prepare QR Data
             const utf8Text = unescape(encodeURIComponent(text));
             const qr = qrcode(0, 'M');
             qr.addData(utf8Text);
@@ -74,22 +78,23 @@ const App = {
             const totalModules = moduleCount + quietZone * 2;
             const modSize = 1024 / totalModules;
             
-            // 2. Double Pass Generation
-            // Pass 1: Red Channel (Variant 0)
-            const gridR = this.buildFabricGrid(totalModules, 0);
+            // 1. Calculate Base Seed
+            const baseSeed = this.getTextSeed(text);
+
+            // 2. Double Pass Generation (Golden Ratio Split)
+            // Red uses baseSeed
+            const gridR = this.buildFabricGrid(totalModules, baseSeed);
             
-            // Pass 2: Green Channel (Variant 1 - different pattern)
-            const gridG = this.buildFabricGrid(totalModules, 1);
+            // Green uses baseSeed * 1.618 (Golden Ratio) -> Mathematically different pattern
+            const gridG = this.buildFabricGrid(totalModules, Math.floor(baseSeed * 1.618));
             
             // 3. Render
             const ctx = this.els.ctx;
             
-            // Background
             ctx.globalCompositeOperation = "source-over";
             ctx.fillStyle = "#000000";
             ctx.fillRect(0, 0, 1024, 1024);
             
-            // Additive Blending for Colors
             ctx.globalCompositeOperation = "screen";
 
             // Draw Red
@@ -111,7 +116,7 @@ const App = {
             }
 
             ctx.globalCompositeOperation = "source-over";
-            this.updateStatus("Generated " + moduleCount + "x" + moduleCount);
+            this.updateStatus("Seed: " + baseSeed);
 
         } catch (e) {
             console.error(e);
@@ -119,16 +124,15 @@ const App = {
         }
     },
 
-    buildFabricGrid(size, variantSeed) {
+    buildFabricGrid(size, seed) {
         const grid = Array(size).fill(0).map(() => Array(size).fill(0));
         const center = Math.floor(size / 2);
         
-        // Iterate only over the Octant (1/8th of the square)
+        // Iterate Octant
         for (let y = 0; y <= center; y++) {
             for (let x = 0; x <= y; x++) {
                 
-                // Tile Coordinates (5x5 sprites)
-                const tx = x + 2; // Shift to align center
+                const tx = x + 2;
                 const ty = y + 2;
                 
                 const tileX = Math.floor(tx / 5);
@@ -137,9 +141,9 @@ const App = {
                 const localX = tx % 5;
                 const localY = ty % 5;
                 
-                // Deterministic random selection based on position and variant
-                // Using a simple hash: TileX + TileY + Variant
-                const hash = (tileX * 1337 + tileY * 7919 + variantSeed * 13); 
+                // Use Seed in hash calculation to shuffle sprites
+                // XOR mixing for better distribution
+                const hash = (tileX * 1337 + tileY * 7919) ^ seed; 
                 const spriteIdx = Math.abs(hash) % SPRITE_LIB.length;
                 
                 const sprite = SPRITE_LIB[spriteIdx];
@@ -173,7 +177,7 @@ const App = {
         }
     },
 
-    // --- SCANNER LOGIC ---
+    // --- SCANNER & RITUAL LOGIC ---
 
     startCamera() {
         if(this.state.isScanning) return;
@@ -186,7 +190,10 @@ const App = {
                 this.els.video.style.display = 'block';
                 this.els.video.play();
                 this.updateStatus("Scanning...");
-                AudioEngine.start();
+                
+                // Start Audio Atmosphere
+                AudioEngine.startScanAtmosphere();
+                
                 this.scanLoop();
             })
             .catch(err => {
@@ -197,7 +204,7 @@ const App = {
 
     stopCamera() {
         this.state.isScanning = false;
-        AudioEngine.stop();
+        AudioEngine.stopAll();
         if(this.els.video.srcObject) {
             this.els.video.srcObject.getTracks().forEach(t => t.stop());
         }
@@ -210,11 +217,10 @@ const App = {
         
         const video = this.els.video;
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            // Process Frame
             const result = this.processFrame(video, video.videoWidth, video.videoHeight);
             
             if (result) {
-                this.captureFrame(video, video.videoWidth, video.videoHeight); // Freeze frame
+                this.captureFrame(video, video.videoWidth, video.videoHeight);
                 this.stopCamera();
                 this.performRitual(result);
                 return;
@@ -229,27 +235,21 @@ const App = {
         canvas.height = 1024;
         const ctx = canvas.getContext('2d');
         
-        // CENTER CROP Implementation
+        // CENTER CROP Implementation (Preserved)
         const aspect = w / h;
         let sx = 0, sy = 0, sw = w, sh = h;
         
         if (aspect > 1) {
-            // Landscape: crop sides
-            sw = h;
-            sx = (w - sw) / 2;
+            sw = h; sx = (w - sw) / 2;
         } else {
-            // Portrait: crop top/bottom
-            sh = w;
-            sy = (h - sh) / 2;
+            sh = w; sy = (h - sh) / 2;
         }
         
-        // Draw cropped image to 1024x1024
         ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1024, 1024);
         
         const imageData = ctx.getImageData(0, 0, 1024, 1024);
         const data = imageData.data;
 
-        // Blue Channel Isolation
         for (let i = 0; i < data.length; i += 4) {
             const b = data[i+2];
             data[i] = b; data[i+1] = b; data[i+2] = b;
@@ -269,25 +269,28 @@ const App = {
     },
 
     performRitual(code) {
-        this.state.isScanning = true; // Lock
-        AudioEngine.start();
+        this.state.isScanning = true; 
+        // Audio is already playing from startCamera, but we ensure it's on
+        AudioEngine.startScanAtmosphere();
 
-        // Animation
+        // Animation with Pulse
         const line = this.els.scanLine;
         line.style.display = 'block';
+        line.style.animation = 'pulse 1.5s infinite'; // Apply CSS pulse animation
         line.style.top = '0%';
         line.style.transition = 'none';
-        void line.offsetHeight; // Reflow
-        line.style.transition = 'top 2s linear';
+        void line.offsetHeight;
+        line.style.transition = 'top 2.5s linear'; // Slower for effect
         line.style.top = '100%';
-        this.updateStatus("Extracting...");
+        this.updateStatus("Analyzing...");
 
         setTimeout(() => {
             this.els.flash.style.opacity = '1';
-            AudioEngine.success();
+            AudioEngine.playSuccessClick();
             
             setTimeout(() => {
                 this.els.flash.style.opacity = '0';
+                line.style.animation = 'none'; // Stop pulse
                 
                 if (code) {
                     try {
@@ -296,13 +299,11 @@ const App = {
                         this.els.input.value = code.data;
                     }
                     
-                    // Frozen State
                     this.els.ctx.fillStyle = "rgba(0,0,0,0.7)";
                     this.els.ctx.fillRect(0, 0, 1024, 1024);
                     this.updateStatus("Decoded!");
                     this.state.frozen = true;
                 } else {
-                    AudioEngine.success(); 
                     this.updateStatus("No Data Found");
                     this.clearCanvas();
                 }
@@ -310,7 +311,7 @@ const App = {
                 this.state.isScanning = false;
                 line.style.display = 'none';
             }, 150);
-        }, 2000);
+        }, 2500);
     },
 
     handleFile(e) {
@@ -321,9 +322,11 @@ const App = {
         reader.onload = (evt) => {
             const img = new Image();
             img.onload = () => {
-                // Show image
                 this.captureFrame(img, img.width, img.height);
                 const result = this.processFrame(img, img.width, img.height);
+                // Trigger ritual manually for file
+                this.state.isScanning = true;
+                AudioEngine.startScanAtmosphere();
                 this.performRitual(result);
             };
             img.src = evt.target.result;
@@ -357,73 +360,126 @@ const App = {
 
     save() {
         const link = document.createElement('a');
-        link.download = 'qrnament-v3.png';
+        link.download = 'qrnament-v3.1.png';
         link.href = this.els.canvas.toDataURL();
         link.click();
     }
 };
 
-// --- AUDIO ENGINE MODULE ---
+// --- AUDIO ENGINE MODULE (UPDATED) ---
 const AudioEngine = {
     ctx: null,
-    source: null,
+    scanNodes: [],
 
     init() {
         if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     },
 
-    start() {
+    startScanAtmosphere() {
         this.init();
-        if(this.source) return;
+        this.stopAll(); // Clear previous
+
+        // 1. Low Drone (40Hz)
+        const drone = this.ctx.createOscillator();
+        drone.type = 'sine';
+        drone.frequency.value = 40;
+        const droneGain = this.ctx.createGain();
+        droneGain.gain.value = 0.15;
+        drone.connect(droneGain);
+        droneGain.connect(this.ctx.destination);
+        drone.start();
+        this.scanNodes.push(drone);
+
+        // 2. Intermittent Signal (880Hz)
+        const beep = this.ctx.createOscillator();
+        beep.type = 'square';
+        beep.frequency.value = 880;
+        const beepGain = this.ctx.createGain();
+        beepGain.gain.value = 0.05;
+        beep.connect(beepGain);
+        beepGain.connect(this.ctx.destination);
+        beep.start();
+        this.scanNodes.push(beep);
+
+        // Intermittent logic (Tremolo simulation via Gain ramping)
+        const toggleBeep = () => {
+            if(!this.scanNodes.includes(beep)) return;
+            const now = this.ctx.currentTime;
+            beepGain.gain.setValueAtTime(beepGain.gain.value, now);
+            beepGain.gain.linearRampToValueAtTime(beepGain.gain.value > 0.04 ? 0.001 : 0.08, now + 0.1);
+        };
         
-        // Noise Buffer
-        const bufferSize = 2 * this.ctx.sampleRate;
+        this.beepInterval = setInterval(toggleBeep, 250);
+    },
+
+    stopAll() {
+        if(this.beepInterval) clearInterval(this.beepInterval);
+        this.scanNodes.forEach(node => {
+            try { node.stop(); } catch(e) {}
+        });
+        this.scanNodes = [];
+    },
+
+    playSuccessClick() {
+        this.init();
+        this.stopAll();
+        
+        const now = this.ctx.currentTime;
+
+        // 1. Metallic Click (Noise + Filter)
+        const bufferSize = this.ctx.sampleRate * 0.2;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
 
         const noise = this.ctx.createBufferSource();
         noise.buffer = buffer;
-        noise.loop = true;
 
         const filter = this.ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.value = 2000;
-        filter.Q.value = 0.5;
+        filter.type = 'highpass';
+        filter.frequency.value = 2000; // Metallic sound
 
-        const gain = this.ctx.createGain();
-        gain.gain.value = 0.15;
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(1.0, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
 
         noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.ctx.destination);
-        noise.start();
+        filter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        noise.start(now);
 
-        this.source = noise;
-    },
+        // 2. Reverb/Delay Tail
+        const delay = this.ctx.createDelay(1.0);
+        delay.delayTime.value = 0.1;
+        
+        const feedback = this.ctx.createGain();
+        feedback.gain.value = 0.4;
 
-    stop() {
-        if(this.source) {
-            try { this.source.stop(); } catch(e) {}
-            this.source = null;
-        }
-    },
+        const delayGain = this.ctx.createGain();
+        delayGain.gain.value = 0.2;
 
-    success() {
-        this.init();
-        this.stop();
-        const now = this.ctx.currentTime;
-        // Click
-        const osc = this.ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.value = 1500;
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.3);
+        // Routing: Noise -> Delay -> Feedback -> Delay...
+        // Actually for a click, we route the noise burst to delay
+        noise.connect(delay);
+        delay.connect(feedback);
+        feedback.connect(delay);
+        delay.connect(delayGain);
+        delayGain.connect(this.ctx.destination);
+
+        // 3. Final Low Thud (Success confirm)
+        const thud = this.ctx.createOscillator();
+        thud.type = 'sine';
+        thud.frequency.setValueAtTime(150, now);
+        thud.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+        const thudGain = this.ctx.createGain();
+        thudGain.gain.setValueAtTime(0.5, now);
+        thudGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        thud.connect(thudGain);
+        thudGain.connect(this.ctx.destination);
+        thud.start(now);
+        thud.stop(now + 0.3);
     }
 };
 
