@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ua">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRnament №3</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+</head>
+<body>
+    <video id="video" playsinline></video>
+    <canvas id="canvas" width="1024" height="1024"></canvas>
+    <div id="scan-line" class="scan-line"></div>
+    <div id="flash-layer" class="flash-overlay"></div>
+
+    <div style="position: fixed; bottom: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 50;">
+        <input type="text" id="main-input" placeholder="Enter text..." style="padding: 10px; width: 80%; background: rgba(0,0,0,0.5); border: 1px solid #00ff41; color: white;">
+        <div id="status" style="color: #00ff41; font-family: monospace;">Ready</div>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="App.startCamera()">Scan</button>
+            <button onclick="App.save()">Save</button>
+        </div>
+    </div>
+
+    <script src="js/core.js"></script>
+</body>
+</html>
